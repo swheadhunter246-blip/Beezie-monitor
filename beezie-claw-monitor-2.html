@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Beezie Claw Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0e0e0f;
+    --surface: #18181b;
+    --surface2: #222226;
+    --border: #2e2e34;
+    --accent: #7c6af7;
+    --green: #3ecf8e;
+    --green-dim: #1a4a38;
+    --red: #f87171;
+    --red-dim: #4a1f1f;
+    --amber: #fbbf24;
+    --amber-dim: #4a3510;
+    --text: #f0eff8;
+    --text2: #9898a8;
+    --text3: #55555f;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  header {
+    padding: 20px 16px 0;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+  }
+  .logo {
+    width: 32px; height: 32px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .tagline { font-size: 12px; color: var(--text3); padding: 0 16px 20px; font-family: var(--mono); }
+
+  .section { padding: 0 16px; margin-bottom: 12px; }
+
+  .claw-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    transition: border-color 0.3s;
+  }
+  .claw-card.state-alert { border-color: var(--red); }
+  .claw-card.state-ok    { border-color: var(--green); }
+
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-name-row { display: flex; align-items: center; gap: 8px; }
+
+  .pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0; transition: background 0.3s;
+  }
+  .pulse-dot.ok       { background: var(--green); }
+  .pulse-dot.alert    { background: var(--red);   animation: blink 0.8s infinite; }
+  .pulse-dot.checking { background: var(--amber); animation: blink 0.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .card-name {
+    font-size: 14px; font-weight: 600; background: transparent;
+    border: none; color: var(--text); font-family: var(--sans); outline: none; width: 110px;
+  }
+
+  .badge { font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 6px; font-weight: 500; }
+  .badge-idle     { background: var(--surface2); color: var(--text3); }
+  .badge-ok       { background: var(--green-dim); color: var(--green); }
+  .badge-alert    { background: var(--red-dim);   color: var(--red); }
+  .badge-checking { background: var(--amber-dim); color: var(--amber); }
+  .badge-error    { background: var(--surface2);  color: var(--red); }
+
+  .field-label {
+    font-size: 11px; color: var(--text3); font-family: var(--mono);
+    margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  input[type=text], input[type=number] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono);
+    font-size: 13px; padding: 9px 11px; outline: none; -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus, input[type=number]:focus { border-color: var(--accent); }
+  input[type=number] { width: 110px; }
+  input::placeholder { color: var(--text3); }
+
+  .fields-row { display: flex; gap: 10px; margin-top: 10px; }
+  .field-block { flex: 1; }
+
+  .val-num {
+    font-family: var(--mono); font-size: 26px; font-weight: 500;
+    color: var(--text2); transition: color 0.3s; line-height: 1; text-align: right;
+  }
+  .val-num.ok    { color: var(--green); }
+  .val-num.alert { color: var(--red); }
+  .val-small { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 3px; text-align: right; }
+
+  .settings-bar {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .settings-label { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+  select {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 10px;
+    outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;
+  }
+
+  .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
+
+  .btn-main {
+    flex: 1; padding: 14px; background: var(--accent); color: #fff;
+    font-family: var(--sans); font-size: 15px; font-weight: 600;
+    border: none; border-radius: var(--radius); cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s; letter-spacing: -0.2px;
+  }
+  .btn-main:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-main.running { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+
+  .btn-icon {
+    width: 50px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text2); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-icon:active { transform: scale(0.96); background: var(--surface2); }
+
+  /* ALARM OVERLAY */
+  .alarm-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999; background: #1a0000;
+    flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    animation: flashbg 0.5s infinite alternate;
+  }
+  .alarm-overlay.active { display: flex; }
+  @keyframes flashbg { from{background:#1a0000} to{background:#3d0000} }
+
+  .alarm-icon { font-size: 72px; margin-bottom: 16px; animation: shake 0.35s infinite; }
+  @keyframes shake {
+    0%  { transform: rotate(-10deg) scale(1.1); }
+    25% { transform: rotate(10deg)  scale(1.15); }
+    50% { transform: rotate(-7deg)  scale(1.1); }
+    75% { transform: rotate(7deg)   scale(1.15); }
+    100%{ transform: rotate(-10deg) scale(1.1); }
+  }
+  .alarm-title  { font-size: 30px; font-weight: 700; color: var(--red); text-align: center; margin-bottom: 8px; }
+  .alarm-claw   { font-size: 15px; color: #ffaaaa; font-family: var(--mono); text-align: center; margin-bottom: 8px; }
+  .alarm-val    { font-size: 56px; font-weight: 700; font-family: var(--mono); color: #fff; line-height: 1; margin-bottom: 6px; }
+  .alarm-thresh { font-size: 13px; color: #ff9999; font-family: var(--mono); margin-bottom: 40px; }
+  .btn-dismiss {
+    padding: 16px 52px; background: var(--red); color: #fff; font-size: 17px; font-weight: 700;
+    font-family: var(--sans); border: none; border-radius: var(--radius); cursor: pointer;
+    animation: glow 0.7s infinite alternate;
+  }
+  @keyframes glow {
+    from { box-shadow: 0 0 16px rgba(248,113,113,0.4); }
+    to   { box-shadow: 0 0 48px rgba(248,113,113,1); }
+  }
+  .btn-dismiss:active { transform: scale(0.96); }
+
+  .log-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .log-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .log-entries { max-height: 180px; overflow-y: auto; }
+  .log-entry { display: flex; gap: 10px; padding: 7px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-family: var(--mono); color: var(--text2); }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .lt { color: var(--text3); flex-shrink: 0; }
+  .log-entry.la { color: var(--red); }
+  .log-entry.lg { color: var(--green); }
+  .log-empty { padding: 14px; font-size: 12px; font-family: var(--mono); color: var(--text3); text-align: center; }
+
+  .tip {
+    background: var(--amber-dim); border: 1px solid var(--amber); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 12px; color: var(--amber); font-family: var(--mono);
+    margin-bottom: 10px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="alarm-overlay" id="alarm-overlay">
+  <div class="alarm-icon">🚨</div>
+  <div class="alarm-title">ALERT!</div>
+  <div class="alarm-claw"   id="alarm-name"></div>
+  <div class="alarm-val"    id="alarm-val"></div>
+  <div class="alarm-thresh" id="alarm-thresh"></div>
+  <button class="btn-dismiss" onclick="dismissAlarm()">✕ DISMISS</button>
+</div>
+
+<header>
+  <div class="logo">🦀</div>
+  <h1>Beezie Claw Monitor</h1>
+</header>
+<p class="tagline">// avg value watcher — 3 claws</p>
+
+<div class="section">
+
+  <div class="tip" id="tip">
+    🔊 Tap <strong>Start Monitoring</strong> first to unlock alarm audio. Keep volume all the way up!
+  </div>
+
+  <div id="claws"></div>
+
+  <div class="settings-bar">
+    <span class="settings-label">⏱ check interval</span>
+    <select id="interval">
+      <option value="15000">15 sec</option>
+      <option value="30000" selected>30 sec</option>
+      <option value="60000">1 min</option>
+      <option value="120000">2 min</option>
+      <option value="300000">5 min</option>
+    </select>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-main" id="start-btn" onclick="toggleMonitor()">▶ Start Monitoring</button>
+    <button class="btn-icon" onclick="checkAll()" id="refresh-btn" title="Check now">↻</button>
+  </div>
+
+  <div class="log-box">
+    <div class="log-header">activity log</div>
+    <div class="log-entries" id="log"><div class="log-empty">no activity yet</div></div>
+  </div>
+</div>
+
+<script>
+const S = {
+  running: false,
+  busy: false,
+  timer: null,
+  audioCtx: null,
+  alarmTimer: null,
+  claws: [
+    { name:'Claw 1', url:'', thresh:'', val:null, status:'idle' },
+    { name:'Claw 2', url:'', thresh:'', val:null, status:'idle' },
+    { name:'Claw 3', url:'', thresh:'', val:null, status:'idle' }
+  ],
+  logs: []
+};
+
+// CORS proxies to try in order
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+];
+
+// ── FETCH avg from Beezie page via CORS proxy ──────────────────
+async function fetchAvg(pageUrl) {
+  let html = null;
+  let lastErr = '';
+
+  for (const makeProxy of PROXIES) {
+    try {
+      const proxyUrl = makeProxy(pageUrl);
+      const res = await fetch(proxyUrl, { cache: 'no-store' });
+      if (!res.ok) { lastErr = `HTTP ${res.status}`; continue; }
+      const data = await res.text();
+
+      // allorigins wraps in JSON: { contents: "..." }
+      let text = data;
+      try {
+        const j = JSON.parse(data);
+        if (j.contents) text = j.contents;
+      } catch(e) {}
+
+      html = text;
+      break;
+    } catch(e) {
+      lastErr = e.message;
+    }
+  }
+
+  if (!html) throw new Error('All proxies failed: ' + lastErr);
+
+  // Extract "Average Value:$276" or "Average Value: $276" or "AverageValue:$276"
+  const match = html.match(/[Aa]verage\s*[Vv]alue[:\s]*\$?([\d,]+(?:\.\d+)?)/);
+  if (!match) return null;
+
+  const num = parseFloat(match[1].replace(/,/g, ''));
+  return isNaN(num) ? null : num;
+}
+
+// ── AUDIO ──────────────────────────────────────────────────────
+function initAudio() {
+  if (!S.audioCtx) S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (S.audioCtx.state === 'suspended') S.audioCtx.resume();
+}
+
+function playAlarmPattern() {
+  if (!S.audioCtx) return;
+  const ctx = S.audioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+  const now = ctx.currentTime;
+  [[1400,0.00],[900,0.17],[1400,0.34],[900,0.51],[1400,0.68],[900,0.85]].forEach(([freq, t]) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, now + t);
+    gain.gain.setValueAtTime(0, now + t);
+    gain.gain.linearRampToValueAtTime(0.8, now + t + 0.01);
+    gain.gain.setValueAtTime(0.8, now + t + 0.13);
+    gain.gain.linearRampToValueAtTime(0, now + t + 0.15);
+    osc.start(now + t); osc.stop(now + t + 0.2);
+  });
+}
+
+function startAlarm() {
+  playAlarmPattern();
+  S.alarmTimer = setInterval(playAlarmPattern, 1200);
+  if (navigator.vibrate) navigator.vibrate([500,200,500,200,500,200,500,200,500]);
+}
+
+function stopAlarm() {
+  if (S.alarmTimer) { clearInterval(S.alarmTimer); S.alarmTimer = null; }
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+// ── ALARM OVERLAY ──────────────────────────────────────────────
+function showAlarm(name, val, thresh) {
+  document.getElementById('alarm-name').textContent   = name;
+  document.getElementById('alarm-val').textContent    = '$' + val.toFixed(0);
+  document.getElementById('alarm-thresh').textContent = 'threshold: $' + thresh;
+  document.getElementById('alarm-overlay').classList.add('active');
+  startAlarm();
+}
+function dismissAlarm() {
+  document.getElementById('alarm-overlay').classList.remove('active');
+  stopAlarm();
+}
+
+// ── CARDS ──────────────────────────────────────────────────────
+function buildCards() {
+  const el = document.getElementById('claws');
+  el.innerHTML = '';
+  S.claws.forEach((c, i) => {
+    el.insertAdjacentHTML('beforeend', `
+      <div class="claw-card" id="card-${i}">
+        <div class="card-top">
+          <div class="card-name-row">
+            <div class="pulse-dot" id="dot-${i}"></div>
+            <input class="card-name" id="name-${i}" value="${c.name}" maxlength="20" />
+          </div>
+          <span class="badge badge-idle" id="badge-${i}">idle</span>
+        </div>
+        <div class="field-label">page url</div>
+        <input type="text" id="url-${i}" placeholder="https://beezie.com/claw/Gold-TCG-91"
+          value="${c.url}" oninput="S.claws[${i}].url=this.value"
+          autocomplete="off" autocorrect="off" spellcheck="false" />
+        <div class="fields-row">
+          <div class="field-block">
+            <div class="field-label">alert when avg ≥ $</div>
+            <input type="number" id="thresh-${i}" placeholder="e.g. 300" value="${c.thresh}"
+              min="0" step="1" oninput="S.claws[${i}].thresh=this.value" />
+          </div>
+          <div class="field-block" style="display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;">
+            <div class="val-num" id="val-${i}">—</div>
+            <div class="val-small">current avg</div>
+          </div>
+        </div>
+      </div>
+    `);
+    document.getElementById(`name-${i}`).addEventListener('change', e => S.claws[i].name = e.target.value);
+  });
+}
+
+function updateCard(i, val, status) {
+  S.claws[i].val = val; S.claws[i].status = status;
+  const dot   = document.getElementById(`dot-${i}`);
+  const badge = document.getElementById(`badge-${i}`);
+  const valEl = document.getElementById(`val-${i}`);
+  const card  = document.getElementById(`card-${i}`);
+  dot.className  = 'pulse-dot' + (status==='alert'?' alert':status==='ok'?' ok':status==='checking'?' checking':'');
+  card.className = 'claw-card'  + (status==='alert'?' state-alert':status==='ok'?' state-ok':'');
+  valEl.textContent = val !== null ? '$' + val.toFixed(0) : '—';
+  valEl.className   = 'val-num' + (status==='alert'?' alert':status==='ok'?' ok':'');
+  const map = {
+    idle:     ['idle',       'badge-idle'],
+    ok:       ['below',      'badge-ok'],
+    alert:    ['🔔 ALERT',   'badge-alert'],
+    checking: ['checking…',  'badge-checking'],
+    error:    ['error',      'badge-error']
+  };
+  const [txt, cls] = map[status] || map.idle;
+  badge.textContent = txt; badge.className = 'badge ' + cls;
+}
+
+// ── LOG ────────────────────────────────────────────────────────
+function addLog(msg, type='') {
+  const t = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  S.logs.unshift({msg, type, t});
+  if (S.logs.length > 50) S.logs.pop();
+  document.getElementById('log').innerHTML = S.logs.map(l =>
+    `<div class="log-entry ${l.type==='alert'?'la':l.type==='ok'?'lg':''}">
+      <span class="lt">${l.t}</span><span>${l.msg}</span>
+    </div>`
+  ).join('');
+}
+
+// ── CHECK ALL ──────────────────────────────────────────────────
+async function checkAll() {
+  if (S.busy) return;
+  S.busy = true;
+  document.getElementById('refresh-btn').disabled = true;
+
+  if (!S.claws.some(c => c.url.trim())) {
+    addLog('No URLs set — paste your Beezie claw URLs above');
+    S.busy = false; document.getElementById('refresh-btn').disabled = false; return;
+  }
+
+  await Promise.allSettled(S.claws.map(async (c, i) => {
+    if (!c.url.trim()) return;
+    updateCard(i, null, 'checking');
+    try {
+      const val = await fetchAvg(c.url.trim());
+      if (val === null) {
+        updateCard(i, null, 'error');
+        addLog(`${c.name}: avg value not found on page`); return;
+      }
+      const thresh = parseFloat(c.thresh);
+      const hit = !isNaN(thresh) && val >= thresh;
+      updateCard(i, val, hit ? 'alert' : 'ok');
+      if (hit) {
+        addLog(`${c.name}: $${val.toFixed(0)} ≥ $${thresh} — ALARM!`, 'alert');
+        showAlarm(c.name, val, thresh);
+      } else {
+        addLog(`${c.name}: avg $${val.toFixed(0)}${!isNaN(thresh) ? ' (threshold: $'+thresh+')' : ''}`, 'ok');
+      }
+    } catch(e) {
+      updateCard(i, null, 'error');
+      addLog(`${c.name}: ${e.message}`);
+    }
+  }));
+
+  S.busy = false;
+  document.getElementById('refresh-btn').disabled = false;
+}
+
+// ── TOGGLE ─────────────────────────────────────────────────────
+function toggleMonitor() {
+  const btn = document.getElementById('start-btn');
+  if (S.running) {
+    S.running = false;
+    clearInterval(S.timer); S.timer = null;
+    btn.textContent = '▶ Start Monitoring';
+    btn.classList.remove('running');
+    addLog('Monitoring stopped');
+  } else {
+    initAudio();
+    document.getElementById('tip').style.display = 'none';
+    S.running = true;
+    const ms = parseInt(document.getElementById('interval').value);
+    const label = ms < 60000 ? (ms/1000)+'s' : (ms/60000)+'m';
+    checkAll();
+    S.timer = setInterval(checkAll, ms);
+    btn.innerHTML = '⏹ Stop Monitoring';
+    btn.classList.add('running');
+    addLog(`Monitoring started — every ${label}`);
+  }
+}
+
+buildCards();
+</script>
+</body>
+</html>
